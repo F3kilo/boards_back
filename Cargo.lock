@@ -293,6 +293,8 @@ dependencies = [
  "mongodb",
  "redis",
  "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

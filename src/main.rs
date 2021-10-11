@@ -1,9 +1,11 @@
-mod boards;
-mod rate_lim;
+pub mod boards;
+mod errors;
+mod handlers;
+mod models;
+pub mod rate_lim;
 
 use crate::boards::Boards;
-use crate::rate_lim::RateLimiter;
-use actix_web::{App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use std::env;
 use std::sync::Arc;
 
@@ -13,13 +15,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init()?;
 
     let boards = Arc::new(Boards::new());
-    let rate_limiter = Arc::new(RateLimiter::new());
+    // let rate_limiter = Arc::new(RateLimiter::new()); todo
 
     HttpServer::new(move || {
         App::new()
+            // boards
+            .service(handlers::get_boards)
+            .service(handlers::post_board)
+            .service(handlers::get_board)
+            .service(handlers::put_board)
+            .service(handlers::delete_board)
+            // tasks
+            .service(handlers::get_tasks)
+            .service(handlers::post_task)
+            .service(handlers::get_task)
+            .service(handlers::put_task)
+            .service(handlers::delete_board)
+            // config
             .wrap(actix_web::middleware::Logger::default())
-            .app_data(Arc::clone(&boards))
-            .app_data(Arc::clone(&rate_limiter))
+            .app_data(web::Data::new(Arc::clone(&boards)))
     })
     .bind("127.0.0.1:9000")?
     .run()
