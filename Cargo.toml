@@ -6,3 +6,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+dotenv = "0.15.0"
+actix-web = "4.0.0-beta.9"
+log = "0.4.14"
+fern = "0.6.0"
+chrono = "0.4.19"
+serde = "1.0.130"
+mongodb = "2.0.0"
+redis = { version = "0.21.2", features = ["tokio-comp", "connection-manager"] }
