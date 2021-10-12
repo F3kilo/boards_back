@@ -1,5 +1,5 @@
 use crate::errors::{CustomError, CustomResult};
-use crate::models::{Board, Task, TaskStage};
+use crate::models::{Board, BoardData, Task, TaskData, TaskStage};
 use mongodb::bson::oid::ObjectId;
 
 pub struct Boards {}
@@ -15,6 +15,7 @@ impl Boards {
             id: Some(ObjectId::new()),
             name: "моя доска".into(),
             description: "описание моей доски".into(),
+            tasks: self.list_tasks("").unwrap(),
         }])
     }
 
@@ -25,26 +26,21 @@ impl Boards {
                 id: None,
                 name: "моя доска".into(),
                 description: "описание моей доски".into(),
+                tasks: self.list_tasks("").unwrap(),
             })
         } else {
             Err(CustomError::NotFound(format!("board with id = {}", 2)))
         }
     }
 
-    pub fn create_board(&self, board_data: Board) -> CustomResult<Board> {
+    pub fn create_board(&self, board_data: BoardData) -> CustomResult<Board> {
         // todo
-        Ok(Board {
-            id: Some(ObjectId::new()),
-            ..board_data
-        })
+        Ok(board_data.into())
     }
 
-    pub fn update_board(&self, id: &str, board_data: Board) -> CustomResult<Board> {
+    pub fn update_board(&self, id: &str, board_data: BoardData) -> CustomResult<Board> {
         // todo
-        Ok(Board {
-            id: Some(ObjectId::new()),
-            ..board_data
-        })
+        Ok(board_data.into())
     }
 
     pub fn delete_board(&self, id: &str) -> CustomResult<Board> {
@@ -53,6 +49,7 @@ impl Boards {
             id: Some(ObjectId::new()),
             name: "моя доска".into(),
             description: "описание моей доски".into(),
+            tasks: self.list_tasks("").unwrap(),
         })
     }
 
@@ -84,20 +81,19 @@ impl Boards {
         })
     }
 
-    pub fn create_task(&self, board_id: &str, task: Task) -> CustomResult<Task> {
+    pub fn create_task(&self, board_id: &str, task_data: TaskData) -> CustomResult<Task> {
         // todo
-        Ok(Task {
-            id: Some(ObjectId::new()),
-            ..task
-        })
+        Ok(task_data.into())
     }
 
-    pub fn update_task(&self, board_id: &str, task_id: &str, task: Task) -> CustomResult<Task> {
+    pub fn update_task(
+        &self,
+        board_id: &str,
+        task_id: &str,
+        task_data: TaskData,
+    ) -> CustomResult<Task> {
         // todo
-        Ok(Task {
-            id: Some(ObjectId::new()),
-            ..task
-        })
+        Ok(task_data.into())
     }
 
     pub fn delete_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {

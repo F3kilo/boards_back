@@ -1,6 +1,6 @@
 use crate::boards::Boards;
 use crate::errors::{CustomError, CustomResult};
-use crate::models::{Board, Task};
+use crate::models::{BoardData, TaskData};
 use actix_web::{web, HttpResponse};
 use std::sync::Arc;
 
@@ -12,10 +12,11 @@ pub async fn get_boards(boards: web::Data<Arc<Boards>>) -> CustomResult<HttpResp
 
 #[actix_web::post("/boards")]
 pub async fn post_board(
-    board_data: web::Json<Board>,
+    board_data: web::Json<BoardData>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
-    let board = boards.create_board(board_data.into_inner())?;
+    let board_data = board_data.into_inner();
+    let board = boards.create_board(board_data)?;
     Ok(HttpResponse::Ok().json(board))
 }
 
@@ -32,7 +33,7 @@ pub async fn get_board(
 #[actix_web::put("/boards/{board_id}")]
 pub async fn put_board(
     board_id: web::Path<String>,
-    board_data: web::Json<Board>,
+    board_data: web::Json<BoardData>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
@@ -63,7 +64,7 @@ pub async fn get_tasks(
 #[actix_web::post("/boards/{board_id}/tasks")]
 pub async fn post_task(
     board_id: web::Path<String>,
-    task_data: web::Json<Task>,
+    task_data: web::Json<TaskData>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let board_id = board_id.into_inner();
@@ -74,25 +75,21 @@ pub async fn post_task(
 
 #[actix_web::get("/boards/{board_id}/tasks/{task_id}")]
 pub async fn get_task(
-    board_id: web::Path<String>,
-    task_id: web::Path<String>,
+    ids: web::Path<(String, String)>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
-    let board_id = board_id.into_inner();
-    let task_id = task_id.into_inner();
+    let (board_id, task_id) = ids.into_inner();
     let tasks = boards.get_task(&board_id, &task_id)?;
     Ok(HttpResponse::Ok().json(tasks))
 }
 
 #[actix_web::put("/boards/{board_id}/tasks/{task_id}")]
 pub async fn put_task(
-    board_id: web::Path<String>,
-    task_id: web::Path<String>,
-    task_data: web::Json<Task>,
+    ids: web::Path<(String, String)>,
+    task_data: web::Json<TaskData>,
     boards: web::Data<Arc<Boards>>,
 ) -> Result<HttpResponse, CustomError> {
-    let board_id = board_id.into_inner();
-    let task_id = task_id.into_inner();
+    let (board_id, task_id) = ids.into_inner();
     let task_data = task_data.into_inner();
     let task = boards.update_task(&board_id, &task_id, task_data)?;
     Ok(HttpResponse::Ok().json(task))
