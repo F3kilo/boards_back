@@ -38,7 +38,7 @@ pub async fn put_board(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let board = boards.update_board(&id, board_data.into_inner()).await?;
+    let board = boards.put_board(&id, board_data.into_inner()).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 

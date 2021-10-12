@@ -1,3 +1,4 @@
+use crate::db::Database;
 use crate::errors::{CustomError, CustomResult};
 use crate::models::{Board, BoardData, Task, TaskData, TaskStage};
 use actix_web::web::Bytes;
@@ -5,88 +6,45 @@ use mongodb::bson::oid::ObjectId;
 use tokio::sync::mpsc::{self, Receiver};
 use tokio::time::Duration;
 
-pub struct Boards {}
+pub struct Boards {
+    db: Box<dyn Database>,
+}
 
 impl Boards {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(db: Box<dyn Database>) -> Self {
+        Self { db }
     }
 
     pub async fn list_boards(&self) -> CustomResult<Vec<Board>> {
-        // todo
-        Ok(vec![Board {
-            id: Some(ObjectId::new()),
-            name: "моя доска".into(),
-            description: "описание моей доски".into(),
-            tasks: self.list_tasks("").await.unwrap(),
-        }])
-    }
-
-    pub async fn board(&self, id: &str) -> CustomResult<Board> {
-        // todo
-        if id == "2" {
-            Ok(Board {
-                id: None,
-                name: "моя доска".into(),
-                description: "описание моей доски".into(),
-                tasks: self.list_tasks("").await.unwrap(),
-            })
-        } else {
-            Err(CustomError::NotFound(format!("board with id = {}", 2)))
-        }
+        self.db.get_boards().await
     }
 
     pub async fn create_board(&self, board_data: BoardData) -> CustomResult<Board> {
-        // todo
-        Ok(board_data.into())
+        self.db.create_board(board_data).await
     }
 
-    pub async fn update_board(&self, id: &str, board_data: BoardData) -> CustomResult<Board> {
-        // todo
-        Ok(board_data.into())
+    pub async fn board(&self, id: &str) -> CustomResult<Board> {
+        self.db.get_board(id).await
+    }
+
+    pub async fn put_board(&self, id: &str, board_data: BoardData) -> CustomResult<Board> {
+        self.db.put_board(id, board_data).await
     }
 
     pub async fn delete_board(&self, id: &str) -> CustomResult<Board> {
-        // todo
-        Ok(Board {
-            id: Some(ObjectId::new()),
-            name: "моя доска".into(),
-            description: "описание моей доски".into(),
-            tasks: self.list_tasks("").await.unwrap(),
-        })
+        self.db.delete_board(id).await
     }
 
     pub async fn list_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>> {
-        // todo
-        Ok(vec![
-            Task {
-                id: Some(ObjectId::new()),
-                name: "моя доска".into(),
-                description: "описание моей доски".into(),
-                stage: TaskStage::Backlog,
-            },
-            Task {
-                id: Some(ObjectId::new()),
-                name: "моя доска".into(),
-                description: "описание моей доски".into(),
-                stage: TaskStage::Complete,
-            },
-        ])
+        self.db.get_tasks(board_id).await
     }
 
     pub async fn get_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {
-        // todo
-        Ok(Task {
-            id: Some(ObjectId::new()),
-            name: "моя доска".into(),
-            description: "описание моей доски".into(),
-            stage: TaskStage::Complete,
-        })
+        self.db.get_task(board_id, task_id).await
     }
 
     pub async fn create_task(&self, board_id: &str, task_data: TaskData) -> CustomResult<Task> {
-        // todo
-        Ok(task_data.into())
+        self.db.create_task(board_id, task_data).await
     }
 
     pub async fn update_task(
@@ -95,18 +53,11 @@ impl Boards {
         task_id: &str,
         task_data: TaskData,
     ) -> CustomResult<Task> {
-        // todo
-        Ok(task_data.into())
+        self.db.put_task(board_id, task_id, task_data).await
     }
 
     pub async fn delete_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {
-        // todo
-        Ok(Task {
-            id: Some(ObjectId::new()),
-            name: "моя доска".into(),
-            description: "описание моей доски".into(),
-            stage: TaskStage::Complete,
-        })
+        self.db.delete_task(board_id, task_id).await
     }
 
     pub async fn subscribe_on_board_changes(

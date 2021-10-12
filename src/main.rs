@@ -3,18 +3,24 @@ mod errors;
 mod handlers;
 mod models;
 pub mod rate_lim;
+mod db;
 
 use crate::boards::Boards;
 use actix_web::{web, App, HttpServer};
 use std::env;
 use std::sync::Arc;
+use crate::db::mongo::Mongo;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv()?;
     init()?;
 
-    let boards = Arc::new(Boards::new());
+    let mongo_connection_str = env::var("MONGO_CONNECTION")?;
+    let client = mongodb::Client::with_uri_str(mongo_connection_str).await?;
+    let database = Box::new(Mongo::new(client));
+
+    let boards = Arc::new(Boards::new(database));
     // let rate_limiter = Arc::new(RateLimiter::new()); todo
 
     HttpServer::new(move || {

@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Board {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
     pub name: String,
     pub description: String,
     pub tasks: Vec<Task>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BoardData {
     pub name: String,
     pub description: String,
@@ -19,7 +19,7 @@ pub struct BoardData {
 impl From<BoardData> for Board {
     fn from(bd: BoardData) -> Self {
         Board {
-            id: None,
+            id: ObjectId::new(),
             name: bd.name,
             description: bd.description,
             tasks: Vec::default(),
@@ -29,8 +29,8 @@ impl From<BoardData> for Board {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Task {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
     pub name: String,
     pub description: String,
     pub stage: TaskStage,
@@ -46,7 +46,7 @@ pub struct TaskData {
 impl From<TaskData> for Task {
     fn from(td: TaskData) -> Self {
         Task {
-            id: None,
+            id: ObjectId::new(),
             name: td.name,
             description: td.description,
             stage: td.stage,
