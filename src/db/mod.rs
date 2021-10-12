@@ -1,4 +1,5 @@
 pub mod mongo;
+pub mod cached;
 
 use crate::errors::CustomResult;
 use crate::models::{Board, BoardData, Task, TaskData};

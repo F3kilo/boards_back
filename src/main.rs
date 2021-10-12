@@ -20,6 +20,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = mongodb::Client::with_uri_str(mongo_connection_str).await?;
     let database = Box::new(Mongo::new(client));
 
+    let redis_connection_str = env::var("REDIS_CONNECTION")?;
+    redis::Client::open(redis_connection_str)?;
+
     let boards = Arc::new(Boards::new(database));
     // let rate_limiter = Arc::new(RateLimiter::new()); todo
 
