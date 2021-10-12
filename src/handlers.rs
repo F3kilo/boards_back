@@ -96,6 +96,16 @@ pub async fn put_task(
     Ok(HttpResponse::Ok().json(task))
 }
 
+#[actix_web::delete("/boards/{board_id}/tasks/{task_id}")]
+pub async fn delete_task(
+    ids: web::Path<(String, String)>,
+    boards: web::Data<Arc<Boards>>,
+) -> Result<HttpResponse, CustomError> {
+    let (board_id, task_id) = ids.into_inner();
+    let task = boards.delete_task(&board_id, &task_id).await?;
+    Ok(HttpResponse::Ok().json(task))
+}
+
 #[actix_web::get("/boards/{board_id}/updates")]
 pub async fn subscribe_board_changes(
     board_id: web::Path<String>,

@@ -88,28 +88,49 @@ impl Database for Mongo {
         let task: Task = data.into();
         let query = doc! { "_id": &board_obj_id };
         let update = doc! { "$addToSet": { "tasks": ser::to_bson(&task)? } };
-        let updated = collection.update_one(query, update, None).await?;
-        log::warn!("UPDATE_RESULT: {:?}", updated);
-        Ok(task)
-        // todo! self.get_task(id).await
+        collection.update_one(query, update, None).await?;
+        self.get_task(board_id, &task.id.to_string()).await
     }
 
     async fn get_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {
-        todo!()
-        // let board_obj_id = ObjectId::from_str(board_id)?;
-        // let task_obj_id = ObjectId::from_str(board_id)?;
-        // let collection = self.get_boards_collection();
-        // let query = doc! { "_id": &board_obj_id, "tasks._id": &task_obj_id };
-        // let board = collection.find_one(query, ).await?;
-        // board.ok_or_else(|| CustomError::NotFound(format!("task #{} in board#{}", task_id, board_id))).map(|b| b.)
+        let board_obj_id = ObjectId::from_str(board_id)?;
+        let task_obj_id = ObjectId::from_str(task_id)?;
+        let collection = self.get_boards_collection();
+        let query = doc! {
+            "_id": &board_obj_id,
+            "tasks._id": &task_obj_id
+        };
+        let board = collection.find_one(query, None).await?;
+        board
+            .ok_or_else(|| {
+                CustomError::NotFound(format!("task #{} in board#{}", task_id, board_id))
+            })
+            .map(|mut b| b.tasks.pop().unwrap())
     }
 
     async fn put_task(&self, board_id: &str, task_id: &str, data: TaskData) -> CustomResult<Task> {
-        todo!()
+        let board_obj_id = ObjectId::from_str(board_id)?;
+        let task_obj_id = ObjectId::from_str(task_id)?;
+        let collection = self.get_boards_collection();
+        let data = ser::to_bson(&data)?;
+        let query = doc! {
+            "_id": &board_obj_id,
+            "tasks._id": &task_obj_id
+        };
+        let update = doc! { "$set": { "tasks.$" : data } };
+        collection.update_one(query, update, None).await?;
+        self.get_task(board_id, task_id).await
     }
 
     async fn delete_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {
-        todo!()
+        let board_obj_id = ObjectId::from_str(board_id)?;
+        let task_obj_id = ObjectId::from_str(task_id)?;
+        let collection = self.get_boards_collection();
+        let task = self.get_task(board_id, task_id).await?;
+        let query = doc! { "_id": &board_obj_id };
+        let update = doc! { "$pull": { "tasks" : { "_id": &task_obj_id } } };
+        collection.update_one(query, update, None).await?;
+        Ok(task)
     }
 
     async fn subscribe_on_board_updates(

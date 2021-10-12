@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(handlers::post_task)
             .service(handlers::get_task)
             .service(handlers::put_task)
-            .service(handlers::delete_board)
+            .service(handlers::delete_task)
             // subscribe
             .service(handlers::subscribe_board_changes)
             // config
