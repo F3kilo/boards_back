@@ -31,6 +31,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(handlers::get_task)
             .service(handlers::put_task)
             .service(handlers::delete_board)
+            // subscribe
+            .service(handlers::subscribe_board_changes)
             // config
             .wrap(actix_web::middleware::Logger::default())
             .app_data(web::Data::new(Arc::clone(&boards)))

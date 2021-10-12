@@ -16,3 +16,6 @@ serde_json = "1.0.68"
 mongodb = "2.0.0"
 redis = { version = "0.21.2", features = ["tokio-comp", "connection-manager"] }
 thiserror = "1.0.30"
+mime = "0.3.16"
+tokio = "1.12.0"
+tokio-stream = "0.1.7"

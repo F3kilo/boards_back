@@ -1,12 +1,13 @@
 use crate::boards::Boards;
 use crate::errors::{CustomError, CustomResult};
 use crate::models::{BoardData, TaskData};
+use actix_web::http::{header, StatusCode};
 use actix_web::{web, HttpResponse};
 use std::sync::Arc;
 
 #[actix_web::get("/boards")]
 pub async fn get_boards(boards: web::Data<Arc<Boards>>) -> CustomResult<HttpResponse> {
-    let boards = boards.list_boards()?;
+    let boards = boards.list_boards().await?;
     Ok(HttpResponse::Ok().json(boards))
 }
 
@@ -16,7 +17,7 @@ pub async fn post_board(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let board_data = board_data.into_inner();
-    let board = boards.create_board(board_data)?;
+    let board = boards.create_board(board_data).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 
@@ -26,7 +27,7 @@ pub async fn get_board(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let board = boards.board(&id)?;
+    let board = boards.board(&id).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 
@@ -37,7 +38,7 @@ pub async fn put_board(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let board = boards.update_board(&id, board_data.into_inner())?;
+    let board = boards.update_board(&id, board_data.into_inner()).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 
@@ -47,7 +48,7 @@ pub async fn delete_board(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let board = boards.delete_board(&id)?;
+    let board = boards.delete_board(&id).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 
@@ -57,7 +58,7 @@ pub async fn get_tasks(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let tasks = boards.list_tasks(&id)?;
+    let tasks = boards.list_tasks(&id).await?;
     Ok(HttpResponse::Ok().json(tasks))
 }
 
@@ -69,7 +70,7 @@ pub async fn post_task(
 ) -> CustomResult<HttpResponse> {
     let board_id = board_id.into_inner();
     let task_data = task_data.into_inner();
-    let task = boards.create_task(&board_id, task_data)?;
+    let task = boards.create_task(&board_id, task_data).await?;
     Ok(HttpResponse::Ok().json(task))
 }
 
@@ -79,7 +80,7 @@ pub async fn get_task(
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let (board_id, task_id) = ids.into_inner();
-    let tasks = boards.get_task(&board_id, &task_id)?;
+    let tasks = boards.get_task(&board_id, &task_id).await?;
     Ok(HttpResponse::Ok().json(tasks))
 }
 
@@ -91,6 +92,20 @@ pub async fn put_task(
 ) -> Result<HttpResponse, CustomError> {
     let (board_id, task_id) = ids.into_inner();
     let task_data = task_data.into_inner();
-    let task = boards.update_task(&board_id, &task_id, task_data)?;
+    let task = boards.update_task(&board_id, &task_id, task_data).await?;
     Ok(HttpResponse::Ok().json(task))
+}
+
+#[actix_web::get("/boards/{board_id}/updates")]
+pub async fn subscribe_board_changes(
+    board_id: web::Path<String>,
+    boards: web::Data<Arc<Boards>>,
+) -> Result<HttpResponse, CustomError> {
+    let board_id = board_id.into_inner();
+    let updates_stream = boards.subscribe_on_board_changes(&board_id).await?;
+    let response_stream = tokio_stream::wrappers::ReceiverStream::new(updates_stream);
+
+    Ok(HttpResponse::build(StatusCode::OK)
+        .insert_header(header::ContentType(mime::TEXT_EVENT_STREAM))
+        .streaming(response_stream))
 }
