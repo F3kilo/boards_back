@@ -128,8 +128,6 @@ impl TasksDatabase for Mongo {
         let collection = self.get_tasks_collection();
         let query = doc! { "_id": &task_obj_id };
         let update = doc! { "$set": ser::to_bson(&task)? };
-        log::trace!("QUERY: {}", query);
-        log::trace!("UPDATE: {}", update);
         collection.update_one(query, update, None).await?;
         Ok(task)
     }
