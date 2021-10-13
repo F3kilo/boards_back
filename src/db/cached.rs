@@ -1,23 +1,22 @@
-use crate::db::{BoardsDatabase, EventMsgReceiver};
+use crate::db::{BoardsDatabase, EventMsgReceiver, TasksDatabase};
 use crate::errors::CustomResult;
 use crate::models::{Board, Task};
-use actix_web::web::Bytes;
 use redis::{AsyncCommands, Client};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use tokio::sync::mpsc::{Receiver, Sender};
 
-pub struct Cached<T: BoardsDatabase> {
+#[derive(Clone)]
+pub struct Cached<T: Clone> {
     db: T,
     redis_client: Client,
 }
 
-impl<T: BoardsDatabase> Cached<T> {
+impl<T: Clone> Cached<T> {
     pub fn new(db: T, redis_client: Client) -> Self {
         Self { db, redis_client }
     }
 
-    async fn set_to_cache<V: Serialize>(&self, key: &str, value: &V) -> CustomResult<()> {
+    async fn cache_set<V: Serialize>(&self, key: &str, value: &V) -> CustomResult<()> {
         let mut connection = self.redis_client.get_async_connection().await?;
         let serialized = serde_json::ser::to_string(value)?;
         redis::pipe()
@@ -28,14 +27,14 @@ impl<T: BoardsDatabase> Cached<T> {
         Ok(())
     }
 
-    async fn get_from_cache<V: DeserializeOwned>(&self, key: &str) -> CustomResult<V> {
+    async fn cache_get<V: DeserializeOwned>(&self, key: &str) -> CustomResult<V> {
         let mut connection = self.redis_client.get_async_connection().await?;
         let serialized = connection.get::<_, String>(&key).await?;
         let deserialized = serde_json::de::from_str(&serialized)?;
         Ok(deserialized)
     }
 
-    async fn delete_from_cache(&self, key: &str) -> CustomResult<()> {
+    async fn cahce_delete(&self, key: &str) -> CustomResult<()> {
         let mut connection = self.redis_client.get_async_connection().await?;
         connection.del(&key).await?;
         Ok(())
@@ -43,11 +42,9 @@ impl<T: BoardsDatabase> Cached<T> {
 }
 
 #[async_trait::async_trait]
-impl<T: BoardsDatabase> BoardsDatabase for Cached<T> {
+impl<T: BoardsDatabase + Clone> BoardsDatabase for Cached<T> {
     async fn create_board(&self, data: Board) -> CustomResult<Board> {
-        todo!()
-        // let board = self.db.create_board(data).await?;
-        // Ok(board)
+        self.db.create_board(data).await
     }
 
     async fn read_boards(&self) -> CustomResult<Vec<Board>> {
@@ -55,53 +52,73 @@ impl<T: BoardsDatabase> BoardsDatabase for Cached<T> {
     }
 
     async fn read_board(&self, id: &str) -> CustomResult<Board> {
-        todo!()
-        // Ok(match self.get_from_cache(id).await {
-        //     Ok(b) => b,
-        //     _ => {
-        //         let board = self.db.get_board(id).await?;
-        //         self.set_to_cache(id, &board).await?;
-        //         board
-        //     }
-        // })
+        Ok(match self.cache_get(id).await {
+            Ok(b) => {
+                log::trace!("Read board #{} from cache", id);
+                b
+            },
+            _ => {
+                log::trace!("Read board #{} from database", id);
+                let board = self.db.read_board(id).await?;
+                self.cache_set(id, &board).await?;
+                board
+            }
+        })
     }
 
     async fn update_board(&self, id: &str, data: Board) -> CustomResult<Board> {
-        todo!()
-        // self.db.put_board(id, data).await
+        let updated = self.db.update_board(id, data).await?;
+        self.cache_set(id, &updated).await?;
+        Ok(updated)
     }
 
     async fn delete_board(&self, id: &str) -> CustomResult<Board> {
-        todo!()
-        // self.delete_from_cache(id).await?;
-        // self.db.delete_board(id).await
+        self.cahce_delete(id).await?;
+        self.db.delete_board(id).await
     }
 
-    async fn subscribe_on_board_updates(&self, board_id: &str) -> CustomResult<EventMsgReceiver> {
+    async fn subscribe_on_board_updates(&self, _board_id: &str) -> CustomResult<EventMsgReceiver> {
         todo!()
     }
 }
 
-// async fn read_board_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>> {
-//     todo!()
-//     // self.get_board(board_id).await.map(|board| board.tasks)
-// }
-//
-// async fn create_task(&self, board_id: &str, data: TaskData) -> CustomResult<Task> {
-//     todo!();
-//     // let task = self.db.create_task(board_id, data).await?;
-//     // self.delete_from_cache(board_id).await?;
-//     // Ok(task)
-// }
-//
-// async fn read_task(&self, task_id: &str) -> CustomResult<Task> {
-//     todo!()
-// }
-//
-// async fn update_task(&self, task_id: &str, data: TaskData) -> CustomResult<Task> {
-//     todo!()
-// }
-//
-// async fn delete_task(&self, task_id: &str) -> CustomResult<Task> {
-//     todo!()
-// }
+#[async_trait::async_trait]
+impl<T: TasksDatabase + Clone> TasksDatabase for Cached<T> {
+    async fn create_task(&self, task: Task) -> CustomResult<Task> {
+        self.db.create_task(task).await
+    }
+
+    async fn read_tasks(&self) -> CustomResult<Vec<Task>> {
+        self.db.read_tasks().await
+    }
+
+    async fn read_board_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>> {
+        self.db.read_board_tasks(board_id).await
+    }
+
+    async fn read_task(&self, id: &str) -> CustomResult<Task> {
+        Ok(match self.cache_get(id).await {
+            Ok(t) => {
+                log::trace!("Read task #{} from cache", id);
+                t
+            },
+            _ => {
+                log::trace!("Read task #{} from database", id);
+                let task = self.db.read_task(id).await?;
+                self.cache_set(id, &task).await?;
+                task
+            }
+        })
+    }
+
+    async fn update_task(&self, id: &str, task: Task) -> CustomResult<Task> {
+        let updated = self.db.update_task(id, task).await?;
+        self.cache_set(id, &updated).await?;
+        Ok(updated)
+    }
+
+    async fn delete_task(&self, id: &str) -> CustomResult<Task> {
+        self.cahce_delete(id).await?;
+        self.db.delete_task(id).await
+    }
+}

@@ -1,17 +1,18 @@
 pub mod boards;
+mod db;
 mod errors;
 mod handlers;
 mod models;
 pub mod rate_lim;
-mod db;
 mod tasks;
 
 use crate::boards::Boards;
+use crate::db::cached::Cached;
+use crate::db::mongo::Mongo;
+use crate::tasks::Tasks;
 use actix_web::{web, App, HttpServer};
 use std::env;
 use std::sync::Arc;
-use crate::db::mongo::Mongo;
-use crate::tasks::Tasks;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,10 +21,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mongo_connection_str = env::var("MONGO_CONNECTION")?;
     let client = mongodb::Client::with_uri_str(mongo_connection_str).await?;
-    let database = Box::new(Mongo::new(client));
+    let mongo_db = Mongo::new(client);
 
-    // let redis_connection_str = env::var("REDIS_CONNECTION")?;
-    // redis::Client::open(redis_connection_str)?;
+    let redis_connection_str = env::var("REDIS_CONNECTION")?;
+    let redis_client = redis::Client::open(redis_connection_str)?;
+    let database = Box::new(Cached::new(mongo_db, redis_client));
 
     let boards = Arc::new(Boards::new(database.clone()));
     let tasks = Arc::new(Tasks::new(database));
