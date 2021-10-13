@@ -122,12 +122,14 @@ impl TasksDatabase for Mongo {
         self.get_by_id(collection, obj_id.into()).await
     }
 
-    async fn update_task(&self, board_id: &str, id: &str, mut task: Task) -> CustomResult<Task> {
-        let obj_id = ObjectId::from_str(id)?;
+    async fn update_task(&self, board_id: &str, task_id: &str, mut task: Task) -> CustomResult<Task> {
+        let task_obj_id = ObjectId::from_str(task_id)?;
         task.board_id = Some(ObjectId::from_str(board_id)?);
         let collection = self.get_tasks_collection();
-        let query = doc! { "_id": &obj_id };
+        let query = doc! { "_id": &task_obj_id };
         let update = doc! { "$set": ser::to_bson(&task)? };
+        log::trace!("QUERY: {}", query);
+        log::trace!("UPDATE: {}", update);
         collection.update_one(query, update, None).await?;
         Ok(task)
     }

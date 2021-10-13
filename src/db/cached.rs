@@ -166,7 +166,7 @@ impl<T: TasksDatabase + Clone> TasksDatabase for Cached<T> {
     }
 
     async fn update_task(&self, board_id: &str, task_id: &str, task: Task) -> CustomResult<Task> {
-        let updated = self.db.update_task(task_id, board_id, task).await?;
+        let updated = self.db.update_task(board_id, task_id, task).await?;
         self.cache_set(board_id, task_id, &updated).await?;
         self.pub_board_updated(board_id)?;
         Ok(updated)

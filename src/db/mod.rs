@@ -24,7 +24,7 @@ pub trait BoardsDatabase: Send + Sync {
 pub trait TasksDatabase: Send + Sync {
     async fn create_task(&self, board_id: &str, task: Task) -> CustomResult<Task>;
     async fn read_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>>;
-    async fn read_task(&self, board_id: &str, id: &str) -> CustomResult<Task>;
-    async fn update_task(&self, board_id: &str, id: &str, task: Task) -> CustomResult<Task>;
-    async fn delete_task(&self, board_id: &str, id: &str) -> CustomResult<Task>;
+    async fn read_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task>;
+    async fn update_task(&self, board_id: &str, task_id: &str, task: Task) -> CustomResult<Task>;
+    async fn delete_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task>;
 }
