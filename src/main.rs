@@ -4,12 +4,14 @@ mod handlers;
 mod models;
 pub mod rate_lim;
 mod db;
+mod tasks;
 
 use crate::boards::Boards;
 use actix_web::{web, App, HttpServer};
 use std::env;
 use std::sync::Arc;
 use crate::db::mongo::Mongo;
+use crate::tasks::Tasks;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,31 +22,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = mongodb::Client::with_uri_str(mongo_connection_str).await?;
     let database = Box::new(Mongo::new(client));
 
-    let redis_connection_str = env::var("REDIS_CONNECTION")?;
-    redis::Client::open(redis_connection_str)?;
+    // let redis_connection_str = env::var("REDIS_CONNECTION")?;
+    // redis::Client::open(redis_connection_str)?;
 
-    let boards = Arc::new(Boards::new(database));
+    let boards = Arc::new(Boards::new(database.clone()));
+    let tasks = Arc::new(Tasks::new(database));
     // let rate_limiter = Arc::new(RateLimiter::new()); todo
 
     HttpServer::new(move || {
         App::new()
             // boards
-            .service(handlers::get_boards)
-            .service(handlers::post_board)
-            .service(handlers::get_board)
-            .service(handlers::put_board)
+            .service(handlers::read_boards)
+            .service(handlers::create_board)
+            .service(handlers::read_board)
+            .service(handlers::update_board)
             .service(handlers::delete_board)
-            // tasks
-            .service(handlers::get_tasks)
-            .service(handlers::post_task)
-            .service(handlers::get_task)
-            .service(handlers::put_task)
-            .service(handlers::delete_task)
-            // subscribe
             .service(handlers::subscribe_board_changes)
+            // tasks
+            .service(handlers::read_tasks)
+            .service(handlers::read_board_tasks)
+            .service(handlers::create_task)
+            .service(handlers::read_task)
+            .service(handlers::update_task)
+            .service(handlers::delete_task)
             // config
             .wrap(actix_web::middleware::Logger::default())
             .app_data(web::Data::new(Arc::clone(&boards)))
+            .app_data(web::Data::new(Arc::clone(&tasks)))
     })
     .bind("127.0.0.1:9000")?
     .run()

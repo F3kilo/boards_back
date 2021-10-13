@@ -1,16 +1,16 @@
-use crate::db::Database;
+use crate::db::BoardsDatabase;
 use crate::errors::CustomResult;
-use crate::models::{Board, BoardData, Task, TaskData};
+use crate::models::{Board, Task};
 use actix_web::web::Bytes;
 use redis::{AsyncCommands, Client};
 use tokio::sync::mpsc::{Receiver, Sender};
 
-pub struct Cached<T: Database> {
+pub struct Cached<T: BoardsDatabase> {
     db: T,
     redis_client: Client,
 }
 
-impl<T: Database> Cached<T> {
+impl<T: BoardsDatabase> Cached<T> {
     pub fn new(db: T, redis_client: Client) -> Self {
         Self { db, redis_client }
     }
@@ -41,56 +41,38 @@ impl<T: Database> Cached<T> {
 }
 
 #[async_trait::async_trait]
-impl<T: Database> Database for Cached<T> {
-    async fn get_boards(&self) -> CustomResult<Vec<Board>> {
-        self.db.get_boards().await
+impl<T: BoardsDatabase> BoardsDatabase for Cached<T> {
+    async fn create_board(&self, data: Board) -> CustomResult<Board> {
+        todo!()
+        // let board = self.db.create_board(data).await?;
+        // Ok(board)
     }
 
-    async fn create_board(&self, data: BoardData) -> CustomResult<Board> {
-        let board = self.db.create_board(data).await?;
-        Ok(board)
+    async fn read_boards(&self) -> CustomResult<Vec<Board>> {
+        self.db.read_boards().await
     }
 
-    async fn get_board(&self, id: &str) -> CustomResult<Board> {
-        Ok(match self.get_from_cache(id).await {
-            Ok(b) => b,
-            _ => {
-                let board = self.db.get_board(id).await?;
-                self.set_to_cache(id, &board).await?;
-                board
-            }
-        })
+    async fn read_board(&self, id: &str) -> CustomResult<Board> {
+        todo!()
+        // Ok(match self.get_from_cache(id).await {
+        //     Ok(b) => b,
+        //     _ => {
+        //         let board = self.db.get_board(id).await?;
+        //         self.set_to_cache(id, &board).await?;
+        //         board
+        //     }
+        // })
     }
 
-    async fn put_board(&self, id: &str, data: BoardData) -> CustomResult<Board> {
-        self.db.put_board(id, data).await
+    async fn update_board(&self, id: &str, data: Board) -> CustomResult<Board> {
+        todo!()
+        // self.db.put_board(id, data).await
     }
 
     async fn delete_board(&self, id: &str) -> CustomResult<Board> {
-        self.delete_from_cache(id).await?;
-        self.db.delete_board(id).await
-    }
-
-    async fn get_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>> {
-        self.get_board(board_id).await.map(|board| board.tasks)
-    }
-
-    async fn create_task(&self, board_id: &str, data: TaskData) -> CustomResult<Task> {
-        let task = self.db.create_task(board_id, data).await?;
-        self.delete_from_cache(board_id).await?;
-        Ok(task)
-    }
-
-    async fn get_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {
         todo!()
-    }
-
-    async fn put_task(&self, board_id: &str, task_id: &str, data: TaskData) -> CustomResult<Task> {
-        todo!()
-    }
-
-    async fn delete_task(&self, board_id: &str, task_id: &str) -> CustomResult<Task> {
-        todo!()
+        // self.delete_from_cache(id).await?;
+        // self.db.delete_board(id).await
     }
 
     async fn subscribe_on_board_updates(
@@ -101,3 +83,27 @@ impl<T: Database> Database for Cached<T> {
         todo!()
     }
 }
+
+    // async fn read_board_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>> {
+    //     todo!()
+    //     // self.get_board(board_id).await.map(|board| board.tasks)
+    // }
+    //
+    // async fn create_task(&self, board_id: &str, data: TaskData) -> CustomResult<Task> {
+    //     todo!();
+    //     // let task = self.db.create_task(board_id, data).await?;
+    //     // self.delete_from_cache(board_id).await?;
+    //     // Ok(task)
+    // }
+    //
+    // async fn read_task(&self, task_id: &str) -> CustomResult<Task> {
+    //     todo!()
+    // }
+    //
+    // async fn update_task(&self, task_id: &str, data: TaskData) -> CustomResult<Task> {
+    //     todo!()
+    // }
+    //
+    // async fn delete_task(&self, task_id: &str) -> CustomResult<Task> {
+    //     todo!()
+    // }

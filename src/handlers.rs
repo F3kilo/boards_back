@@ -1,19 +1,20 @@
 use crate::boards::Boards;
 use crate::errors::{CustomError, CustomResult};
-use crate::models::{BoardData, TaskData};
+use crate::models::{Board, Task};
 use actix_web::http::{header, StatusCode};
 use actix_web::{web, HttpResponse};
 use std::sync::Arc;
+use crate::tasks::Tasks;
 
 #[actix_web::get("/boards")]
-pub async fn get_boards(boards: web::Data<Arc<Boards>>) -> CustomResult<HttpResponse> {
-    let boards = boards.list_boards().await?;
+pub async fn read_boards(boards: web::Data<Arc<Boards>>) -> CustomResult<HttpResponse> {
+    let boards = boards.read_boards().await?;
     Ok(HttpResponse::Ok().json(boards))
 }
 
 #[actix_web::post("/boards")]
-pub async fn post_board(
-    board_data: web::Json<BoardData>,
+pub async fn create_board(
+    board_data: web::Json<Board>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let board_data = board_data.into_inner();
@@ -22,23 +23,24 @@ pub async fn post_board(
 }
 
 #[actix_web::get("/boards/{board_id}")]
-pub async fn get_board(
+pub async fn read_board(
     board_id: web::Path<String>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let board = boards.board(&id).await?;
+    let board = boards.read_board(&id).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 
 #[actix_web::put("/boards/{board_id}")]
-pub async fn put_board(
+pub async fn update_board(
     board_id: web::Path<String>,
-    board_data: web::Json<BoardData>,
+    board: web::Json<Board>,
     boards: web::Data<Arc<Boards>>,
 ) -> CustomResult<HttpResponse> {
     let id = board_id.into_inner();
-    let board = boards.put_board(&id, board_data.into_inner()).await?;
+    let board = board.into_inner();
+    let board = boards.update_board(&id, board).await?;
     Ok(HttpResponse::Ok().json(board))
 }
 
@@ -52,57 +54,61 @@ pub async fn delete_board(
     Ok(HttpResponse::Ok().json(board))
 }
 
-#[actix_web::get("/boards/{board_id}/tasks")]
-pub async fn get_tasks(
-    board_id: web::Path<String>,
-    boards: web::Data<Arc<Boards>>,
-) -> CustomResult<HttpResponse> {
-    let id = board_id.into_inner();
-    let tasks = boards.list_tasks(&id).await?;
+#[actix_web::get("/tasks")]
+pub async fn read_tasks(tasks: web::Data<Arc<Tasks>>) -> CustomResult<HttpResponse> {
+    let tasks = tasks.read_tasks().await?;
     Ok(HttpResponse::Ok().json(tasks))
 }
 
-#[actix_web::post("/boards/{board_id}/tasks")]
-pub async fn post_task(
+#[actix_web::get("/boards/{board_id}/tasks")]
+pub async fn read_board_tasks(
     board_id: web::Path<String>,
-    task_data: web::Json<TaskData>,
-    boards: web::Data<Arc<Boards>>,
+    tasks: web::Data<Arc<Tasks>>,
 ) -> CustomResult<HttpResponse> {
     let board_id = board_id.into_inner();
-    let task_data = task_data.into_inner();
-    let task = boards.create_task(&board_id, task_data).await?;
-    Ok(HttpResponse::Ok().json(task))
-}
-
-#[actix_web::get("/boards/{board_id}/tasks/{task_id}")]
-pub async fn get_task(
-    ids: web::Path<(String, String)>,
-    boards: web::Data<Arc<Boards>>,
-) -> CustomResult<HttpResponse> {
-    let (board_id, task_id) = ids.into_inner();
-    let tasks = boards.get_task(&board_id, &task_id).await?;
+    let tasks = tasks.read_board_tasks(&board_id).await?;
     Ok(HttpResponse::Ok().json(tasks))
 }
 
-#[actix_web::put("/boards/{board_id}/tasks/{task_id}")]
-pub async fn put_task(
-    ids: web::Path<(String, String)>,
-    task_data: web::Json<TaskData>,
-    boards: web::Data<Arc<Boards>>,
-) -> Result<HttpResponse, CustomError> {
-    let (board_id, task_id) = ids.into_inner();
-    let task_data = task_data.into_inner();
-    let task = boards.update_task(&board_id, &task_id, task_data).await?;
+#[actix_web::post("/tasks")]
+pub async fn create_task(
+    task: web::Json<Task>,
+    tasks: web::Data<Arc<Tasks>>,
+) -> CustomResult<HttpResponse> {
+    let task = task.into_inner();
+    let task = tasks.create_task(task).await?;
     Ok(HttpResponse::Ok().json(task))
 }
 
-#[actix_web::delete("/boards/{board_id}/tasks/{task_id}")]
-pub async fn delete_task(
-    ids: web::Path<(String, String)>,
-    boards: web::Data<Arc<Boards>>,
+#[actix_web::get("/tasks/{task_id}")]
+pub async fn read_task(
+    ids: web::Path<String>,
+    tasks: web::Data<Arc<Tasks>>,
+) -> CustomResult<HttpResponse> {
+    let task_id = ids.into_inner();
+    let tasks = tasks.read_task(&task_id).await?;
+    Ok(HttpResponse::Ok().json(tasks))
+}
+
+#[actix_web::put("/tasks/{task_id}")]
+pub async fn update_task(
+    task_id: web::Path<String>,
+    task: web::Json<Task>,
+    tasks: web::Data<Arc<Tasks>>,
 ) -> Result<HttpResponse, CustomError> {
-    let (board_id, task_id) = ids.into_inner();
-    let task = boards.delete_task(&board_id, &task_id).await?;
+    let id = task_id.into_inner();
+    let task = task.into_inner();
+    let task = tasks.update_task(&id, task).await?;
+    Ok(HttpResponse::Ok().json(task))
+}
+
+#[actix_web::delete("/tasks/{task_id}")]
+pub async fn delete_task(
+    ids: web::Path<String>,
+    tasks: web::Data<Arc<Tasks>>,
+) -> Result<HttpResponse, CustomError> {
+    let task_id = ids.into_inner();
+    let task = tasks.delete_task(&task_id).await?;
     Ok(HttpResponse::Ok().json(task))
 }
 
