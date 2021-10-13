@@ -1,9 +1,6 @@
 use crate::db::{BoardsDatabase, EventMsgReceiver};
-use crate::errors::{CustomError, CustomResult};
+use crate::errors::CustomResult;
 use crate::models::Board;
-use actix_web::web::Bytes;
-use tokio::sync::mpsc::{self, Receiver};
-use tokio::time::Duration;
 
 pub struct Boards {
     db: Box<dyn BoardsDatabase>,

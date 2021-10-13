@@ -1,14 +1,12 @@
 use crate::db::{BoardsDatabase, EventMsgReceiver, TasksDatabase};
 use crate::errors::{CustomError, CustomResult};
 use crate::models::{Board, Task};
-use actix_web::web::Bytes;
 use mongodb::{
     bson::{doc, oid::ObjectId, ser, Bson},
     Client, Collection,
 };
 use serde::de::DeserializeOwned;
 use std::str::FromStr;
-use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_stream::StreamExt;
 
 #[derive(Debug, Clone)]
