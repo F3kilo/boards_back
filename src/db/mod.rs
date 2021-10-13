@@ -22,10 +22,9 @@ pub trait BoardsDatabase: Send + Sync {
 
 #[async_trait::async_trait]
 pub trait TasksDatabase: Send + Sync {
-    async fn create_task(&self, task: Task) -> CustomResult<Task>;
-    async fn read_tasks(&self) -> CustomResult<Vec<Task>>;
-    async fn read_board_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>>;
-    async fn read_task(&self, id: &str) -> CustomResult<Task>;
-    async fn update_task(&self, id: &str, task: Task) -> CustomResult<Task>;
-    async fn delete_task(&self, id: &str) -> CustomResult<Task>;
+    async fn create_task(&self, board_id: &str, task: Task) -> CustomResult<Task>;
+    async fn read_tasks(&self, board_id: &str) -> CustomResult<Vec<Task>>;
+    async fn read_task(&self, board_id: &str, id: &str) -> CustomResult<Task>;
+    async fn update_task(&self, board_id: &str, id: &str, task: Task) -> CustomResult<Task>;
+    async fn delete_task(&self, board_id: &str, id: &str) -> CustomResult<Task>;
 }

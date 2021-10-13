@@ -13,7 +13,8 @@ pub struct Board {
 pub struct Task {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
-    pub board_id: ObjectId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub board_id: Option<ObjectId>,
     pub name: String,
     pub description: String,
     pub stage: TaskStage,

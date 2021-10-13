@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(handlers::subscribe_board_changes)
             // tasks
             .service(handlers::read_tasks)
-            .service(handlers::read_board_tasks)
+            .service(handlers::read_tasks)
             .service(handlers::create_task)
             .service(handlers::read_task)
             .service(handlers::update_task)
