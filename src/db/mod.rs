@@ -4,7 +4,10 @@ pub mod mongo;
 use crate::errors::CustomResult;
 use crate::models::{Board, Task};
 use actix_web::web::Bytes;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::Receiver;
+
+pub type EventMsgResult = CustomResult<Bytes>;
+pub type EventMsgReceiver = Receiver<EventMsgResult>;
 
 #[async_trait::async_trait]
 pub trait BoardsDatabase: Send + Sync {
@@ -14,11 +17,7 @@ pub trait BoardsDatabase: Send + Sync {
     async fn update_board(&self, id: &str, board: Board) -> CustomResult<Board>;
     async fn delete_board(&self, id: &str) -> CustomResult<Board>;
 
-    async fn subscribe_on_board_updates(
-        &self,
-        board_id: &str,
-        tx: Sender<CustomResult<Bytes>>,
-    ) -> Receiver<CustomResult<Bytes>>;
+    async fn subscribe_on_board_updates(&self, board_id: &str) -> CustomResult<EventMsgReceiver>;
 }
 
 #[async_trait::async_trait]

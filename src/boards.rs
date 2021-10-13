@@ -1,4 +1,4 @@
-use crate::db::BoardsDatabase;
+use crate::db::{BoardsDatabase, EventMsgReceiver};
 use crate::errors::{CustomError, CustomResult};
 use crate::models::Board;
 use actix_web::web::Bytes;
@@ -34,24 +34,10 @@ impl Boards {
         self.db.delete_board(id).await
     }
 
-    pub async fn subscribe_on_board_changes(
+    pub async fn subscribe_on_board_updates(
         &self,
         board_id: &str,
-    ) -> Result<Receiver<Result<Bytes, CustomError>>, CustomError> {
-        let (tx, rx) = mpsc::channel(100);
-        tx.send(Ok(Bytes::from("subscribed = true\r\n")))
-            .await
-            .unwrap();
-
-        let id = board_id.to_string();
-        tokio::spawn(async move {
-            loop {
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                let msg = format!("test event from board {}\r\n", id);
-                tx.send(Ok(Bytes::from(msg))).await.unwrap();
-            }
-        });
-
-        Ok(rx)
+    ) -> CustomResult<EventMsgReceiver> {
+        self.db.subscribe_on_board_updates(board_id).await
     }
 }

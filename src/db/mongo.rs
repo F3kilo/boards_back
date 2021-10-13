@@ -1,4 +1,4 @@
-use crate::db::{BoardsDatabase, TasksDatabase};
+use crate::db::{BoardsDatabase, EventMsgReceiver, TasksDatabase};
 use crate::errors::{CustomError, CustomResult};
 use crate::models::{Board, Task};
 use actix_web::web::Bytes;
@@ -83,12 +83,10 @@ impl BoardsDatabase for Mongo {
         board.ok_or_else(|| CustomError::NotFound(format!("board with id: {}", id)))
     }
 
-    async fn subscribe_on_board_updates(
-        &self,
-        board_id: &str,
-        tx: Sender<CustomResult<Bytes>>,
-    ) -> Receiver<CustomResult<Bytes>> {
-        todo!()
+    async fn subscribe_on_board_updates(&self, _board_id: &str) -> CustomResult<EventMsgReceiver> {
+        Err(CustomError::InternalError(
+            "Subscription isn't implemented for mongo".into(),
+        ))
     }
 }
 

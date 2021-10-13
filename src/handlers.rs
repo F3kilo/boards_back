@@ -118,7 +118,7 @@ pub async fn subscribe_board_changes(
     boards: web::Data<Arc<Boards>>,
 ) -> Result<HttpResponse, CustomError> {
     let board_id = board_id.into_inner();
-    let updates_stream = boards.subscribe_on_board_changes(&board_id).await?;
+    let updates_stream = boards.subscribe_on_board_updates(&board_id).await?;
     let response_stream = tokio_stream::wrappers::ReceiverStream::new(updates_stream);
 
     Ok(HttpResponse::build(StatusCode::OK)
