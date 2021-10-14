@@ -285,14 +285,17 @@ dependencies = [
 name = "boards_back"
 version = "0.1.0"
 dependencies = [
+ "actix-service",
  "actix-web",
  "async-trait",
  "chrono",
  "dotenv",
  "fern",
+ "futures",
  "log",
  "mime",
  "mongodb",
+ "pin-project",
  "redis",
  "serde",
  "serde_json",
