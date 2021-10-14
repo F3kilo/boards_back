@@ -6,7 +6,7 @@ use redis::RedisError;
 use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum CustomError {
     #[error("MongoDB error: {0}")]
     MongoDbError(String),

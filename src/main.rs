@@ -13,6 +13,7 @@ use crate::tasks::Tasks;
 use actix_web::{web, App, HttpServer};
 use std::env;
 use std::sync::Arc;
+use crate::rate_lim::RateLimiter;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,11 +26,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let redis_connection_str = env::var("REDIS_CONNECTION")?;
     let redis_client = redis::Client::open(redis_connection_str)?;
+    let connection_manager = redis_client.get_tokio_connection_manager().await?;
+    let rate_limiter = RateLimiter::new(connection_manager);
     let database = Box::new(Cached::new(mongo_db, redis_client));
+
+
 
     let boards = Arc::new(Boards::new(database.clone()));
     let tasks = Arc::new(Tasks::new(database));
-    // let rate_limiter = Arc::new(RateLimiter::new()); todo
+
 
     HttpServer::new(move || {
         App::new()
@@ -49,6 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(handlers::delete_task)
             // config
             .wrap(actix_web::middleware::Logger::default())
+            .wrap(rate_limiter.clone())
             .app_data(web::Data::new(Arc::clone(&boards)))
             .app_data(web::Data::new(Arc::clone(&tasks)))
     })
